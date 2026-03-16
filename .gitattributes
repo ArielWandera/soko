@@ -1,0 +1,26 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files — always LF
+*.py text eol=lf
+
+# Docker files — always LF
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Config files — always LF
+*.conf text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.toml text eol=lf
+
+# Markdown and docs — always LF
+*.md text eol=lf
+
+# Requirements — always LF
+requirements.txt text eol=lf
+
+# Windows batch files — keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
