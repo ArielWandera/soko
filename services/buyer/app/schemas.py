@@ -1,38 +1,87 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, field_validator
 from datetime import datetime
-from app.models.user import UserRole
+from app.models.order import OrderStatus, PaymentStatus
 
 
-# ── Request schemas ──────────────────────────────────────────────────
-class UserRegister(BaseModel):
-    email: EmailStr
+# ── Buyer Profile ─────────────────────────────────────────────────────
+class BuyerProfileCreate(BaseModel):
     full_name: str
-    password: str
-    role: UserRole = UserRole.buyer
+    phone: str | None = None
+    district: str | None = None
 
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+class BuyerProfileUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    district: str | None = None
 
 
-# ── Response schemas ─────────────────────────────────────────────────
-class UserOut(BaseModel):
+class BuyerProfileOut(BaseModel):
     id: int
-    email: EmailStr
+    user_id: int
     full_name: str
-    role: UserRole
+    phone: str | None
+    district: str | None
     is_active: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+# ── Orders ────────────────────────────────────────────────────────────
+class OrderCreate(BaseModel):
+    produce_id: int
+    quantity_kg: float
+
+    @field_validator("quantity_kg")
+    @classmethod
+    def quantity_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError("Quantity must be greater than 0")
+        return v
 
 
-class TokenData(BaseModel):
-    user_id: int | None = None
-    role: UserRole | None = None
+class OrderOut(BaseModel):
+    id: int
+    produce_id: int
+    farmer_id: int
+    quantity_kg: float
+    price_per_kg: float
+    total_price: float
+    status: OrderStatus
+    payment_status: PaymentStatus
+    notes: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class OrderListOut(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    results: list[OrderOut]
+
+
+# ── Reviews ───────────────────────────────────────────────────────────
+class ReviewCreate(BaseModel):
+    stars: int
+    comment: str | None = None
+
+    @field_validator("stars")
+    @classmethod
+    def stars_must_be_valid(cls, v):
+        if v < 1 or v > 5:
+            raise ValueError("Stars must be between 1 and 5")
+        return v
+
+
+class ReviewOut(BaseModel):
+    id: int
+    produce_id: int
+    order_id: int
+    stars: int
+    comment: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
