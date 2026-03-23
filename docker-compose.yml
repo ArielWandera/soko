@@ -41,8 +41,8 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: rabbitmq
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI → http://localhost:15672
+      - "127.0.0.1:5672:5672"    # AMQP
+      - "127.0.0.1:15672:15672"  # Management UI → http://localhost:15672
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -80,12 +80,12 @@ services:
     build: ./services/auth
     container_name: auth_service
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     environment:
       DATABASE_URL: postgresql://auth_user:auth_pass@auth_db:5432/auth_db
       SECRET_KEY: supersecretkey_change_in_prod
       ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      ACCESS_TOKEN_EXPIRE_MINUTES: 10080
     depends_on:
       auth_db:
         condition: service_healthy
@@ -117,7 +117,7 @@ services:
     build: ./services/farmer   # replicate auth/ structure here
     container_name: farmer_service
     ports:
-      - "8002:8002"
+      - "127.0.0.1:8002:8002"
     environment:
       DATABASE_URL: postgresql://farmer_user:farmer_pass@farmer_db:5432/farmer_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
@@ -154,11 +154,12 @@ services:
     build: ./services/buyer
     container_name: buyer_service
     ports:
-      - "8003:8003"
+      - "127.0.0.1:8003:8003"
     environment:
       DATABASE_URL: postgresql://buyer_user:buyer_pass@buyer_db:5432/buyer_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       PRODUCE_SERVICE_URL: http://produce_service:8004
+      INTERNAL_API_KEY: soko-internal-dev-key
     depends_on:
       buyer_db:
         condition: service_healthy
@@ -192,11 +193,12 @@ services:
     build: ./services/produce
     container_name: produce_service
     ports:
-      - "8004:8004"
+      - "127.0.0.1:8004:8004"
     environment:
       DATABASE_URL: postgresql://produce_user:produce_pass@produce_db:5432/produce_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       FARMER_SERVICE_URL: http://farmer_service:8002
+      INTERNAL_API_KEY: soko-internal-dev-key
     depends_on:
       produce_db:
         condition: service_healthy
@@ -230,7 +232,7 @@ services:
     build: ./services/recommendation
     container_name: recommendation_service
     ports:
-      - "8005:8005"
+      - "127.0.0.1:8005:8005"
     environment:
       DATABASE_URL: postgresql://recoo_user:recoo_pass@recoo_db:5432/recoo_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/

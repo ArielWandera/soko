@@ -68,7 +68,8 @@ async def reduce_produce_stock(produce_id: int, quantity: float) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.patch(
                 f"{settings.PRODUCE_SERVICE_URL}/produce/{produce_id}/reduce-stock",
-                json={"quantity": quantity}
+                json={"quantity": quantity},
+                headers={"X-Internal-Key": settings.INTERNAL_API_KEY}
             )
             return response.status_code == 200
     except httpx.RequestError as e:

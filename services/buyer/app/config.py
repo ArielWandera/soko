@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     # Internal service URLs — using Docker service names as hostnames
     PRODUCE_SERVICE_URL: str = "http://produce_service:8004"
+    INTERNAL_API_KEY: str = "soko-internal-dev-key"
 
     class Config:
         env_file = ".env"

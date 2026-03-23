@@ -13,18 +13,28 @@ class ProduceListingCreate(BaseModel):
     price_per_unit: float
     district: str
 
+    @field_validator("name")
+    @classmethod
+    def name_must_be_valid(cls, v):
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Name must be at least 2 characters")
+        if len(v) > 100:
+            raise ValueError("Name must be 100 characters or fewer")
+        return v
+
     @field_validator("quantity")
     @classmethod
     def quantity_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError("Quantity must be greater than 0")
+        if v < 0.1:
+            raise ValueError("Quantity must be at least 0.1")
         return v
 
     @field_validator("price_per_unit")
     @classmethod
     def price_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError("Price must be greater than 0")
+        if v < 1.0:
+            raise ValueError("Price must be at least 1.0")
         return v
 
 

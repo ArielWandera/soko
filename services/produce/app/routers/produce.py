@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -206,13 +206,15 @@ class StockReduction(BaseModel):
 def reduce_stock(
     produce_id: int,
     payload: StockReduction,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_internal_key: str = Header(default="")
 ):
     """
     Called internally by Buyer service after a confirmed order.
-    No JWT required — internal service-to-service call only.
-    In production this would be secured via an internal API key.
+    Requires the X-Internal-Key header for service-to-service authentication.
     """
+    if x_internal_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid internal key")
     listing = db.query(ProduceListing).filter(
         ProduceListing.id == produce_id
     ).first()

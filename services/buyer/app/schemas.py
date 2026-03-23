@@ -36,8 +36,8 @@ class OrderCreate(BaseModel):
     @field_validator("quantity_kg")
     @classmethod
     def quantity_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError("Quantity must be greater than 0")
+        if v < 0.1:
+            raise ValueError("Quantity must be at least 0.1")
         return v
 
 

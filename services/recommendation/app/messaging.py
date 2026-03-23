@@ -101,9 +101,19 @@ async def _consume_queue(channel: aio_pika.Channel, queue_name: str):
     logger.info(f"Subscribed to queue: {queue_name}")
 
 
+async def _subscribe(connection: aio_pika.RobustConnection):
+    """Open a fresh channel and register all queue consumers."""
+    channel = await connection.channel()
+    await channel.set_qos(prefetch_count=10)
+    for queue_name in QUEUES:
+        await _consume_queue(channel, queue_name)
+    logger.info("Recommendation consumer running — waiting for events.")
+
+
 async def start_consumer():
     """
     Connects to RabbitMQ with retry and starts consuming all queues.
+    Re-subscribes automatically after any reconnect.
     Runs as a persistent background task for the service lifetime.
     """
     while True:
@@ -112,15 +122,20 @@ async def start_consumer():
                 settings.RABBITMQ_URL,
                 reconnect_interval=5,
             )
-            channel = await connection.channel()
-            await channel.set_qos(prefetch_count=10)
 
-            for queue_name in QUEUES:
-                await _consume_queue(channel, queue_name)
+            # Re-subscribe every time the connection is re-established
+            async def on_reconnect(conn: aio_pika.RobustConnection):
+                try:
+                    await _subscribe(conn)
+                    logger.info("Re-subscribed to all queues after reconnect.")
+                except Exception as exc:
+                    logger.error(f"Re-subscribe failed: {exc}")
 
-            logger.info("Recommendation consumer running — waiting for events.")
+            connection.reconnect_callbacks.add(on_reconnect)
 
-            # Keep alive until connection drops
+            await _subscribe(connection)
+
+            # Keep alive — the robust connection handles reconnects via the callback
             await asyncio.Future()
 
         except asyncio.CancelledError:
