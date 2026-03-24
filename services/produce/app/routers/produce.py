@@ -10,6 +10,7 @@ from app.schemas import ProduceListingCreate, ProduceListingUpdate, ProduceListi
 from app.dependencies import require_farmer
 from app.messaging import publish_event
 from app.config import settings
+from app.cache import get_cached_predictions, set_cached_predictions, invalidate_predictions
 
 router = APIRouter(prefix="/produce", tags=["Produce"])
 
@@ -36,7 +37,12 @@ def get_price_predictions(
     """
     Returns average price per category (and optionally district) derived
     from active listings. The frontend uses this for price prediction cards.
+    Results are cached in Redis for 10 minutes per category/district combo.
     """
+    cached = get_cached_predictions(category, district)
+    if cached:
+        return cached
+
     query = db.query(ProduceListing).filter(ProduceListing.is_available == True)
     if category:
         query = query.filter(ProduceListing.category == category)
@@ -45,7 +51,6 @@ def get_price_predictions(
 
     listings = query.all()
 
-    # Group by category and compute averages
     from collections import defaultdict
     buckets: dict = defaultdict(list)
     for l in listings:
@@ -59,7 +64,9 @@ def get_price_predictions(
         }
         for cat, prices in buckets.items()
     ]
-    return {"results": results}
+    data = {"results": results}
+    set_cached_predictions(category, district, data)
+    return data
 
 
 # ── POST /produce — create listing (farmer only) ──────────────────────
@@ -90,6 +97,9 @@ async def create_listing(
         "price_per_unit": listing.price_per_unit,
         "unit": listing.unit,
     })
+
+    # New listing changes price averages — invalidate all prediction cache entries
+    invalidate_predictions()
 
     return listing
 

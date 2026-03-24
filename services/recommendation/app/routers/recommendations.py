@@ -9,6 +9,10 @@ from app.database import get_db
 from app.models.recommendation import OrderEvent, QualityScore, ProduceSummary
 from app.schemas import RecommendationItem, RecommendationListOut, ProduceScoreOut
 from app.config import settings
+from app.cache import (
+    get_cached_recommendations, set_cached_recommendations,
+    get_cached_score, set_cached_score,
+)
 
 router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 bearer = HTTPBearer()
@@ -50,11 +54,15 @@ def get_recommendations(
     - +0.3 if it's in a district the buyer has ordered from
     - +0.3 based on normalised average star rating (if any reviews exist)
     Produce the buyer has already ordered is excluded.
+    Results are cached in Redis for 5 minutes per buyer.
     """
+    cached = get_cached_recommendations(user_id)
+    if cached:
+        return RecommendationListOut(**cached)
+
     # Buyer's historical categories and districts
     buyer_orders = db.query(OrderEvent).filter(OrderEvent.buyer_id == user_id).all()
     ordered_produce_ids = {o.produce_id for o in buyer_orders}
-    buyer_categories = {o.produce_id for o in buyer_orders}  # resolved below via summaries
 
     # Resolve categories/districts from produce summaries
     if ordered_produce_ids:
@@ -111,12 +119,20 @@ def get_recommendations(
     items.sort(key=lambda x: x.score, reverse=True)
     items = items[:limit]
 
-    return RecommendationListOut(buyer_id=user_id, total=len(items), results=items)
+    result = RecommendationListOut(buyer_id=user_id, total=len(items), results=items)
+    set_cached_recommendations(user_id, result.model_dump())
+    return result
 
 
 @router.get("/produce/{produce_id}/score", response_model=ProduceScoreOut)
 def get_produce_score(produce_id: int, db: Session = Depends(get_db)):
-    """Returns the average quality star rating for a produce listing."""
+    """Returns the average quality star rating for a produce listing. Cached for 10 minutes."""
+    cached = get_cached_score(produce_id)
+    if cached:
+        return ProduceScoreOut(**cached)
+
     total = db.query(QualityScore).filter(QualityScore.produce_id == produce_id).count()
     avg = _avg_stars(produce_id, db)
-    return ProduceScoreOut(produce_id=produce_id, avg_stars=avg, total_reviews=total)
+    result = ProduceScoreOut(produce_id=produce_id, avg_stars=avg, total_reviews=total)
+    set_cached_score(produce_id, result.model_dump())
+    return result

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import SessionLocal
 from app.models.recommendation import OrderEvent, QualityScore, ProduceSummary
+from app.cache import invalidate_recommendations, invalidate_score
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ def _handle_order_placed(data: dict, db: Session):
     db.add(event)
     db.commit()
     logger.info(f"Stored order event: order_id={data['order_id']}")
+    # Buyer's order history changed — their cached recommendations are now stale
+    invalidate_recommendations(data["buyer_id"])
 
 
 def _handle_quality_scored(data: dict, db: Session):
@@ -41,6 +44,9 @@ def _handle_quality_scored(data: dict, db: Session):
     db.add(score)
     db.commit()
     logger.info(f"Stored quality score: produce_id={data['produce_id']} stars={data['stars']}")
+    # Ratings changed — invalidate the score cache and the reviewer's recommendations
+    invalidate_score(data["produce_id"])
+    invalidate_recommendations(data["buyer_id"])
 
 
 def _handle_produce_listed(data: dict, db: Session):
