@@ -6,7 +6,7 @@ Prerequisites:
   - Tests hit the real HTTP endpoints (no mocks)
 
 Install test deps:
-  pip install pytest httpx pytest-asyncio
+  pip install -r tests/integration/requirements.txt
 """
 
 import sys
