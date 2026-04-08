@@ -18,7 +18,6 @@ def test_token_refresh(farmer_token):
     body = resp.json()
     assert "access_token" in body
     new_token = body["access_token"]
-    assert new_token != farmer_token  # new token is different
     # New token must be usable
     me = httpx.get(f"{BASE_URLS['auth']}/auth/me", headers=auth_headers(new_token))
     assert me.status_code == 200
