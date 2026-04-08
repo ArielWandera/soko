@@ -18,7 +18,7 @@ class BuyerProfileUpdate(BaseModel):
 
 class BuyerProfileOut(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     full_name: str
     phone: str | None
     district: str | None
@@ -44,7 +44,7 @@ class OrderCreate(BaseModel):
 class OrderOut(BaseModel):
     id: int
     produce_id: int
-    farmer_id: int
+    farmer_id: str
     quantity_kg: float
     price_per_kg: float
     total_price: float

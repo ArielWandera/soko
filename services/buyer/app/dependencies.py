@@ -13,7 +13,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         role: str = payload.get("role")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return int(user_id), role
+        return user_id, role
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 

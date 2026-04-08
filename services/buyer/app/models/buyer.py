@@ -8,7 +8,7 @@ class BuyerProfile(Base):
     __tablename__ = "buyer_profiles"
 
     id          = Column(Integer, primary_key=True, index=True)
-    user_id     = Column(Integer, unique=True, nullable=False, index=True)
+    user_id     = Column(String, unique=True, nullable=False, index=True)   # FK to auth_db (UUID)
     full_name   = Column(String, nullable=False)
     phone       = Column(String, nullable=True)
     district    = Column(String, nullable=True)

@@ -22,7 +22,7 @@ def list_farmer_orders(
     page_size: int = Query(default=10, ge=1, le=50),
     status: OrderStatus | None = Query(default=None),
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer),
+    user_id: str = Depends(require_farmer),
 ):
     """List all orders placed against this farmer's produce."""
     query = db.query(Order).filter(Order.farmer_id == user_id)
@@ -43,7 +43,7 @@ def list_farmer_orders(
 def get_farmer_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer),
+    user_id: str = Depends(require_farmer),
 ):
     order = db.query(Order).filter(
         Order.id == order_id,
@@ -59,7 +59,7 @@ async def update_order_status(
     order_id: int,
     new_status: OrderStatus,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer),
+    user_id: str = Depends(require_farmer),
 ):
     """
     Farmer-driven status transitions:

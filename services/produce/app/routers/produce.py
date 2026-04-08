@@ -15,7 +15,7 @@ from app.cache import get_cached_predictions, set_cached_predictions, invalidate
 router = APIRouter(prefix="/produce", tags=["Produce"])
 
 
-async def _fetch_farmer_name(user_id: int) -> str | None:
+async def _fetch_farmer_name(user_id: str) -> str | None:
     """Look up the farmer's display name from the farmer service."""
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
@@ -78,7 +78,7 @@ def get_price_predictions(
 async def create_listing(
     payload: ProduceListingCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     farmer_name = await _fetch_farmer_name(user_id)
 
@@ -150,7 +150,7 @@ def get_my_listings(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     query = db.query(ProduceListing).filter(ProduceListing.user_id == user_id)
     total = query.count()
@@ -176,7 +176,7 @@ def update_listing(
     produce_id: int,
     payload: ProduceListingUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     listing = db.query(ProduceListing).filter(
         ProduceListing.id == produce_id,
@@ -198,7 +198,7 @@ def update_listing(
 def delete_listing(
     produce_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     listing = db.query(ProduceListing).filter(
         ProduceListing.id == produce_id,

@@ -53,7 +53,7 @@ class ProduceListingUpdate(BaseModel):
 # ── Response ──────────────────────────────────────────────────────────
 class ProduceListingOut(BaseModel):
     id: int
-    farmer_id: int
+    farmer_id: str
     farmer_name: str | None
     name: str
     description: str | None

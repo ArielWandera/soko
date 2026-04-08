@@ -16,7 +16,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 async def place_order(
     payload: OrderCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     # 1. Get buyer profile
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
@@ -81,7 +81,7 @@ def get_my_orders(
     page_size: int = Query(default=10, ge=1, le=50),
     status: OrderStatus | None = Query(default=None),
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if not profile:
@@ -101,7 +101,7 @@ def get_my_orders(
 def get_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if not profile:
@@ -120,7 +120,7 @@ def get_order(
 def cancel_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if not profile:

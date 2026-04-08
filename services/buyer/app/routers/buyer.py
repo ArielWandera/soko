@@ -13,7 +13,7 @@ router = APIRouter(prefix="/buyers", tags=["Buyer Profile"])
 def create_profile(
     payload: BuyerProfileCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     existing = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if existing:
@@ -29,7 +29,7 @@ def create_profile(
 @router.get("/profile", response_model=BuyerProfileOut)
 def get_my_profile(
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if not profile:
@@ -41,7 +41,7 @@ def get_my_profile(
 def update_profile(
     payload: BuyerProfileUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_buyer)
+    user_id: str = Depends(require_buyer)
 ):
     profile = db.query(BuyerProfile).filter(BuyerProfile.user_id == user_id).first()
     if not profile:

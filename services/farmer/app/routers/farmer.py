@@ -15,7 +15,7 @@ router = APIRouter(prefix="/farmers", tags=["Farmers"])
 async def create_profile(
     payload: FarmerProfileCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     existing = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if existing:
@@ -40,7 +40,7 @@ async def create_profile(
 @router.get("/profile", response_model=FarmerProfileOut)
 def get_my_profile(
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     profile = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if not profile:
@@ -53,7 +53,7 @@ def get_my_profile(
 def update_profile(
     payload: FarmerProfileUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     profile = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if not profile:
@@ -87,7 +87,7 @@ def list_farmers(
 
 # ── GET /farmers/by-user/{user_id} — internal: lookup by auth user_id ─
 @router.get("/by-user/{user_id}", response_model=FarmerProfileOut)
-def get_farmer_by_user_id(user_id: int, db: Session = Depends(get_db)):
+def get_farmer_by_user_id(user_id: str, db: Session = Depends(get_db)):
     """Used internally by produce service to retrieve farmer name at listing creation."""
     profile = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if not profile:
@@ -109,7 +109,7 @@ def get_farmer_by_id(farmer_id: int, db: Session = Depends(get_db)):
 async def add_farm(
     payload: FarmCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     profile = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if not profile:
@@ -133,7 +133,7 @@ async def add_farm(
 @router.get("/farms/mine", response_model=list[FarmOut])
 def get_my_farms(
     db: Session = Depends(get_db),
-    user_id: int = Depends(require_farmer)
+    user_id: str = Depends(require_farmer)
 ):
     profile = db.query(FarmerProfile).filter(FarmerProfile.user_id == user_id).first()
     if not profile:

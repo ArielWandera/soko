@@ -6,7 +6,7 @@ from app.config import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8001/auth/login")
 
 
-def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> tuple[str, str]:
     """
     Decodes the JWT issued by Auth service.
     Other services do NOT call Auth service over HTTP — they just verify
@@ -18,7 +18,7 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
         role: str = payload.get("role")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return int(user_id), role
+        return user_id, role
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 

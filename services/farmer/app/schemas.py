@@ -35,7 +35,7 @@ class FarmerProfileUpdate(BaseModel):
 
 class FarmerProfileOut(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     full_name: str
     phone: str | None
     district: str | None

@@ -25,8 +25,8 @@ class ProduceListing(Base):
     __tablename__ = "produce_listings"
 
     id             = Column(Integer, primary_key=True, index=True)
-    farmer_id      = Column(Integer, nullable=False, index=True)  # FK to farmer_db
-    user_id        = Column(Integer, nullable=False, index=True)  # FK to auth_db, for quick auth checks
+    farmer_id      = Column(String, nullable=False, index=True)   # auth user UUID of the farmer
+    user_id        = Column(String, nullable=False, index=True)   # auth user UUID, for quick auth checks
     farmer_name    = Column(String, nullable=True)                # denormalised for fast reads
     name           = Column(String, nullable=False, index=True)
     description    = Column(String, nullable=True)

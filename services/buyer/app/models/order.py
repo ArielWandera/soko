@@ -26,7 +26,7 @@ class Order(Base):
     id             = Column(Integer, primary_key=True, index=True)
     buyer_id       = Column(Integer, ForeignKey("buyer_profiles.id"), nullable=False)
     produce_id     = Column(Integer, nullable=False)   # FK to produce_db
-    farmer_id      = Column(Integer, nullable=False)   # FK to farmer_db
+    farmer_id      = Column(String, nullable=False)    # auth user UUID of the farmer
     quantity_kg    = Column(Float, nullable=False)
     price_per_kg   = Column(Float, nullable=False)
     total_price    = Column(Float, nullable=False)
