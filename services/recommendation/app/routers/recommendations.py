@@ -18,17 +18,17 @@ router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 bearer = HTTPBearer()
 
 
-def _get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer)) -> int:
+def _get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
     try:
         payload = jwt.decode(
             credentials.credentials,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        user_id: int = payload.get("sub")
+        user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return int(user_id)
+        return user_id
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -80,6 +80,15 @@ def get_recommendations(
         ProduceSummary.produce_id.notin_(ordered_produce_ids)
     ).all() if ordered_produce_ids else db.query(ProduceSummary).all()
 
+    # Single bulk query for all avg star ratings — avoids N+1 per candidate
+    avg_stars_map: dict[int, float] = {
+        row.produce_id: round(float(row.avg_stars), 2)
+        for row in db.query(
+            QualityScore.produce_id,
+            func.avg(QualityScore.stars).label("avg_stars"),
+        ).group_by(QualityScore.produce_id).all()
+    }
+
     # Build recommendation list with scores
     items: list[RecommendationItem] = []
     for p in candidates:
@@ -94,7 +103,7 @@ def get_recommendations(
             score += 0.3
             reasons.append(f"available in your area ({p.district})")
 
-        avg = _avg_stars(p.produce_id, db)
+        avg = avg_stars_map.get(p.produce_id)
         if avg is not None:
             score += round((avg / 5.0) * 0.3, 4)
             reasons.append(f"rated {avg}/5 by buyers")

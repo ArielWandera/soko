@@ -4,7 +4,7 @@ from datetime import datetime
 
 class RecommendationItem(BaseModel):
     produce_id: int
-    farmer_id: int
+    farmer_id: str
     name: str
     category: str
     district: str
@@ -16,7 +16,7 @@ class RecommendationItem(BaseModel):
 
 
 class RecommendationListOut(BaseModel):
-    buyer_id: int
+    buyer_id: str
     total: int
     results: list[RecommendationItem]
 

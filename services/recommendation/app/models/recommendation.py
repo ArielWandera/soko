@@ -9,9 +9,9 @@ class OrderEvent(Base):
 
     id         = Column(Integer, primary_key=True, index=True)
     order_id   = Column(Integer, nullable=False, unique=True, index=True)
-    buyer_id   = Column(Integer, nullable=False, index=True)
+    buyer_id   = Column(String, nullable=False, index=True)
     produce_id = Column(Integer, nullable=False, index=True)
-    farmer_id  = Column(Integer, nullable=False)
+    farmer_id  = Column(String, nullable=False)
     quantity_kg  = Column(Float, nullable=False)
     total_price  = Column(Float, nullable=False)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
@@ -23,8 +23,8 @@ class QualityScore(Base):
 
     id         = Column(Integer, primary_key=True, index=True)
     produce_id = Column(Integer, nullable=False, index=True)
-    farmer_id  = Column(Integer, nullable=False, index=True)
-    buyer_id   = Column(Integer, nullable=False)
+    farmer_id  = Column(String, nullable=False, index=True)
+    buyer_id   = Column(String, nullable=False)
     stars      = Column(Integer, nullable=False)  # 1–5
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -35,7 +35,7 @@ class ProduceSummary(Base):
 
     id             = Column(Integer, primary_key=True, index=True)
     produce_id     = Column(Integer, nullable=False, unique=True, index=True)
-    farmer_id      = Column(Integer, nullable=False)
+    farmer_id      = Column(String, nullable=False)
     name           = Column(String, nullable=False)
     category       = Column(String, nullable=False)
     district       = Column(String, nullable=False)
