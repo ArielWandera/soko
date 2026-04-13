@@ -1,57 +1,51 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, DateTime,
-    Float, Text, Enum as SAEnum
+    Column, String, Boolean,
+    DateTime, Text, Enum as SAEnum
 )
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.database import Base
 import enum
 
 
-class PaymentStatus(str, enum.Enum):
-    pending   = "pending"
-    completed = "completed"
-    failed    = "failed"
-    cancelled = "cancelled"
-    refunded  = "refunded"
+class NotificationType(str, enum.Enum):
+    order_placed       = "order_placed"
+    payment_confirmed  = "payment_confirmed"
+    payment_failed     = "payment_failed"
+    order_dispatched   = "order_dispatched"
+    order_delivered    = "order_delivered"
+    order_cancelled    = "order_cancelled"
+    new_message        = "new_message"
+    new_review         = "new_review"
+    new_follower       = "new_follower"
+    system             = "system"
 
 
-class PaymentMethodType(str, enum.Enum):
-    mobile_money     = "mobile_money"
-    cash_on_delivery = "cash_on_delivery"
-    bank_transfer    = "bank_transfer"
+class NotificationChannel(str, enum.Enum):
+    in_app = "in_app"
+    sms    = "sms"
+    push   = "push"
 
 
-class Transaction(Base):
-    __tablename__ = "transactions"
+class Notification(Base):
+    __tablename__ = "notifications"
 
-    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id            = Column(UUID(as_uuid=True), nullable=False, index=True, unique=True)
-    buyer_id            = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(UUID(as_uuid=True), nullable=False, index=True)
 
-    # Financials
-    amount              = Column(Float,  nullable=False)
-    currency            = Column(String, default="UGX")
+    type        = Column(SAEnum(NotificationType), nullable=False)
+    channel     = Column(SAEnum(NotificationChannel), nullable=False)
 
-    # Payment method
-    payment_method_type = Column(SAEnum(PaymentMethodType), nullable=False)
-    payment_provider    = Column(String, nullable=True)    # MTN | Airtel
-    payment_phone       = Column(String, nullable=True)
+    title       = Column(String, nullable=False)
+    body        = Column(Text,   nullable=False)
 
-    # Status
-    status              = Column(SAEnum(PaymentStatus), default=PaymentStatus.pending)
-    failure_reason      = Column(Text,   nullable=True)
+    # Optional deep-link data — frontend uses to navigate on tap
+    entity_type = Column(String, nullable=True)   # "order" | "message" | "listing"
+    entity_id   = Column(String, nullable=True)   # the id to navigate to
 
-    # PesaPal tracking
-    pesapal_order_tracking_id = Column(String, nullable=True, index=True)
-    pesapal_merchant_ref      = Column(String, nullable=True)
-    pesapal_payment_url       = Column(String, nullable=True)
-    pesapal_payment_method    = Column(String, nullable=True)  # what PesaPal reports
+    is_read     = Column(Boolean, default=False)
+    sent        = Column(Boolean, default=False)   # whether SMS/push was sent
+    sent_at     = Column(DateTime, nullable=True)
 
-    # IPN registration
-    pesapal_ipn_id      = Column(String, nullable=True)
-
-    paid_at             = Column(DateTime, nullable=True)
-    created_at          = Column(DateTime, default=datetime.utcnow)
-    updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at  = Column(DateTime, default=datetime.utcnow)
