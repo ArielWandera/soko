@@ -10,3 +10,4 @@ aio_pika==9.4.1
 httpx==0.27.0
 python-multipart==0.0.9
 redis==5.0.4
+cloudinary
