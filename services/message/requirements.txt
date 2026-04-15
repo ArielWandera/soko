@@ -8,4 +8,5 @@ pydantic-settings==2.2.1
 python-jose[cryptography]==3.3.0
 aio_pika==9.4.1
 httpx==0.28.1
-python-multipart==0.0.9
+httpx
+websockets
