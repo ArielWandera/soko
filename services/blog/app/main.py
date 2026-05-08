@@ -17,8 +17,8 @@ app = FastAPI(
     root_path="/posts",
 )
 
-app.include_router(posts.router,    prefix="/posts")
-app.include_router(comments.router, prefix="/posts")
+app.include_router(posts.router)
+app.include_router(comments.router)
 
 
 @app.get("/health")

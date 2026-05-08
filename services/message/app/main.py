@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.db.database import Base, engine
-from app.routers import messages, ws
+from app.routers import messages, ws,conversations
 
 
 @asynccontextmanager
@@ -19,6 +19,7 @@ app = FastAPI(
 )
 
 app.include_router(ws.router)
+app.include_router(conversations.router, prefix="/conversations")
 app.include_router(messages.router,prefix="/conversations")
 
 
