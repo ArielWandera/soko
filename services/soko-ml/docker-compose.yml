@@ -1,5 +1,3 @@
-version: "3.9"
-
 networks:
   soko-ml-network:
     driver: bridge
@@ -26,10 +24,11 @@ services:
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      test: ["CMD", "bash", "-c", "echo srvr | nc localhost 2181 | grep -q Mode"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -61,8 +60,9 @@ services:
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 15s
-      timeout: 10s
+      timeout: 30s
       retries: 10
+      start_period: 30s
 
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
@@ -119,7 +119,7 @@ services:
     networks:
       - soko-ml-network
     ports:
-      - "${PRICE_SERVICE_PORT:-8001}:8001"
+      - "${PRICE_SERVICE_PORT:-8081}:8001"
     environment:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -155,7 +155,7 @@ services:
     networks:
       - soko-ml-network
     ports:
-      - "${REC_SERVICE_PORT:-8002}:8002"
+      - "${REC_SERVICE_PORT:-8082}:8002"
     environment:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -195,7 +195,7 @@ services:
         aliases:
           - ml-gateway
     ports:
-      - "${GATEWAY_PORT:-8000}:8000"
+      - "${GATEWAY_PORT:-8080}:8000"
     environment:
       - PRICE_SERVICE_URL=http://price-prediction-service:8001
       - REC_SERVICE_URL=http://recommendation-service:8002

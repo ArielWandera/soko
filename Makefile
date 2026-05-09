@@ -5,8 +5,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 ML_DIR       := services/soko-ml
-COMPOSE      := docker-compose -f $(ML_DIR)/docker-compose.yml --project-directory $(ML_DIR)
-COMPOSE_DEV  := docker-compose \
+COMPOSE      := docker compose -f $(ML_DIR)/docker-compose.yml --project-directory $(ML_DIR)
+COMPOSE_DEV  := docker compose \
                   -f $(ML_DIR)/docker-compose.yml \
                   -f $(ML_DIR)/docker-compose.dev.yml \
                   --project-directory $(ML_DIR)
@@ -79,15 +79,15 @@ dev:
 
 dev-price:
 	cd $(ML_DIR)/price-prediction-service && \
-	  $(abspath $(PRICE_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+	  $(abspath $(PRICE_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8081 --reload
 
 dev-rec:
 	cd $(ML_DIR)/recommendation-service && \
-	  $(abspath $(REC_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8002 --reload
+	  $(abspath $(REC_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8082 --reload
 
 dev-gateway:
 	cd $(ML_DIR)/ml-gateway-service && \
-	  $(abspath $(GATEWAY_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+	  $(abspath $(GATEWAY_VENV))/bin/uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
 
 # ── INFRASTRUCTURE ────────────────────────────────────────────────────────────
 
@@ -124,11 +124,12 @@ redis-cli:
 
 up: bridge-network
 	$(COMPOSE) up --build -d
-	@echo "ML stack live → http://localhost:8000"
-	@echo "Run 'docker-compose up -d' in the project root to start the core stack."
+	@echo "ML stack live → http://localhost:8080  (gateway)"
+	@echo "               http://localhost:8081  (price-prediction)"
+	@echo "               http://localhost:8082  (recommendation)"
 
 down:
-	$(COMPOSE) down
+	$(COMPOSE) down -v
 
 restart: down up
 
@@ -164,22 +165,22 @@ test-gateway:
 
 health:
 	@echo "=== ML Gateway ===" && \
-	  curl -sf http://localhost:8000/health | python3 -m json.tool || echo "UNREACHABLE"
+	  curl -sf http://localhost:8080/health | python3 -m json.tool || echo "UNREACHABLE"
 	@echo "=== Price Service ===" && \
-	  curl -sf http://localhost:8001/health | python3 -m json.tool || echo "UNREACHABLE"
+	  curl -sf http://localhost:8081/health | python3 -m json.tool || echo "UNREACHABLE"
 	@echo "=== Recommendation Service ===" && \
-	  curl -sf http://localhost:8002/health | python3 -m json.tool || echo "UNREACHABLE"
+	  curl -sf http://localhost:8082/health | python3 -m json.tool || echo "UNREACHABLE"
 
 smoke-test:
 	@echo "=== Smoke: Price Prediction ==="
-	@curl -sf -X POST http://localhost:8000/price/predict \
+	@curl -sf -X POST http://localhost:8080/price/predict \
 	  -H 'Content-Type: application/json' \
 	  -d '{"market":"Kisenyi_Kampala","crop":"maize_grain","weeks_ahead":4}' \
 	  | python3 -m json.tool
 	@echo "=== Smoke: Farmers for Buyer ==="
-	@curl -sf "http://localhost:8000/recommend/farmers-for-buyer/B0001?top_n=3" | python3 -m json.tool
+	@curl -sf "http://localhost:8080/recommend/farmers-for-buyer/B0001?top_n=3" | python3 -m json.tool
 	@echo "=== Smoke: Buyers for Farmer ==="
-	@curl -sf "http://localhost:8000/recommend/buyers-for-farmer/F0001?top_n=3" | python3 -m json.tool
+	@curl -sf "http://localhost:8080/recommend/buyers-for-farmer/F0001?top_n=3" | python3 -m json.tool
 
 # ── CLEAN ─────────────────────────────────────────────────────────────────────
 
