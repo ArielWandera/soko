@@ -45,15 +45,7 @@ install:
 	python3.12 -m venv $(DATA_VENV)    && $(DATA_VENV)/bin/pip install -q -r $(ML_DIR)/data-generator/requirements.txt
 	@echo "All ML dependencies installed."
 	@echo "Installing CmdStan 2.33.1 into Prophet's internal path (one-time, ~400 MB)..."
-	$(PRICE_VENV)/bin/python -c " \
-	  import prophet, pathlib, cmdstanpy; \
-	  d = pathlib.Path(prophet.__file__).parent / 'stan_model'; \
-	  target = d / 'cmdstan-2.33.1'; \
-	  d.mkdir(parents=True, exist_ok=True); \
-	  (print('CmdStan 2.33.1 already present, skipping.') if (target / 'Makefile').exists() \
-	   else (print('Downloading + compiling CmdStan 2.33.1...'), \
-	         cmdstanpy.install_cmdstan(dir=str(d), version='2.33.1'), \
-	         print('CmdStan 2.33.1 installed.')))"
+	$(PRICE_VENV)/bin/python -c "import prophet,pathlib,cmdstanpy;d=pathlib.Path(prophet.__file__).parent/'stan_model';target=d/'cmdstan-2.33.1';d.mkdir(parents=True,exist_ok=True);print('CmdStan 2.33.1 already present, skipping.') if (target/'Makefile').exists() else (print('Downloading + compiling CmdStan 2.33.1...'),cmdstanpy.install_cmdstan(dir=str(d),version='2.33.1'),print('CmdStan 2.33.1 installed.'))"
 
 generate-data:
 	@mkdir -p $(ML_DIR)/recommendation-service/data/raw
@@ -125,8 +117,8 @@ redis-cli:
 up: bridge-network
 	$(COMPOSE) up --build -d
 	@echo "ML stack live → http://localhost:8080  (gateway)"
-	@echo "               http://localhost:8081  (price-prediction)"
-	@echo "               http://localhost:8082  (recommendation)"
+	@echo "               http://localhost:8094  (price-prediction)"
+	@echo "               http://localhost:8095  (recommendation)"
 
 down:
 	$(COMPOSE) down -v
