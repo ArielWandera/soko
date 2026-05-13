@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy backend
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          REPO_URL: ${{ secrets.REPO_URL }}
+          # Shared
+          INTERNAL_SECRET: ${{ secrets.INTERNAL_SECRET }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          # Auth
+          AUTH_SECRET_KEY: ${{ secrets.AUTH_SECRET_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          # Media (Cloudinary)
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          # Payment (Pesapal)
+          PESAPAL_CONSUMER_KEY: ${{ secrets.PESAPAL_CONSUMER_KEY }}
+          PESAPAL_CONSUMER_SECRET: ${{ secrets.PESAPAL_CONSUMER_SECRET }}
+          PESAPAL_ENV: ${{ secrets.PESAPAL_ENV }}
+          # SMS / USSD (Africa's Talking)
+          AT_USERNAME: ${{ secrets.AT_USERNAME }}
+          AT_API_KEY: ${{ secrets.AT_API_KEY }}
+          AT_SENDER_ID: ${{ secrets.AT_SENDER_ID }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m
+          envs: >-
+            REPO_URL,INTERNAL_SECRET,FRONTEND_URL,
+            AUTH_SECRET_KEY,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,
+            CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,
+            PESAPAL_CONSUMER_KEY,PESAPAL_CONSUMER_SECRET,PESAPAL_ENV,
+            AT_USERNAME,AT_API_KEY,AT_SENDER_ID
+          script: |
+            set -e
+
+            # ── Clone on first deploy, pull on subsequent ──────────────────────
+            if [ ! -d /opt/soko/app/.git ]; then
+              git clone "${REPO_URL}" /opt/soko/app
+            fi
+            cd /opt/soko/app
+            git pull origin main
+
+            # ── Write all service .env files ───────────────────────────────────
+            bash scripts/write-envs.sh
+
+            # ── Ensure the ML bridge network exists ────────────────────────────
+            docker network create soko-ml-bridge 2>/dev/null || true
+
+            # ── Start or restart ───────────────────────────────────────────────
+            if docker compose ps --quiet 2>/dev/null | grep -q .; then
+              make restart
+            else
+              make start
+            fi
+
+            echo "Deploy complete — $(curl -sf http://localhost/health || echo 'health check pending')"

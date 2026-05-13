@@ -15,18 +15,31 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install ruff
         run: pip install ruff
 
-      - name: Lint all services
+      - name: Lint core services
         run: |
-          ruff check services/auth/app \
-                        services/farmer/app \
-                        services/buyer/app \
-                        services/produce/app \
-                        services/recommendation/app
+          ruff check \
+            services/auth/app \
+            services/user/app \
+            services/produce/app \
+            services/order/app \
+            services/payment/app \
+            services/message/app \
+            services/notification/app \
+            services/blog/app \
+            services/ussd/app
+
+      - name: Lint ML services
+        run: |
+          ruff check \
+            services/soko-ml/ml-gateway-service/src \
+            services/soko-ml/price-prediction-service/src \
+            services/soko-ml/recommendation-service/src \
+            services/soko-ml/kafka-agent/src
 
   integration-tests:
     name: Integration Tests
@@ -36,33 +49,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and start services
-        run: docker compose up --build -d
-        timeout-minutes: 10
+      - name: Create ML bridge network
+        run: docker network create soko-ml-bridge
 
-      - name: Wait for all services to be healthy
+      - name: Build and start core services
+        run: docker compose up --build -d
+        timeout-minutes: 15
+
+      - name: Wait for services to be healthy
         run: |
-          echo "Waiting for all 5 services to respond..."
-          for port in 8001 8002 8003 8004 8005; do
+          echo "Waiting for core services..."
+          for port in 8001 8002 8003 8004 8005 8006 8007 8008 8009; do
             for i in $(seq 1 40); do
               if curl -sf http://localhost:${port}/health > /dev/null 2>&1; then
-                echo "Port ${port} is up."
+                echo "Port ${port} ready."
                 break
               fi
-              if [ "$i" = "40" ]; then
-                echo "Timed out waiting for port ${port}"
-                docker compose logs
-                exit 1
-              fi
-              echo "Port ${port} not ready, attempt $i — waiting 5s..."
+              [ "$i" -eq 40 ] && { echo "Timed out on port ${port}"; docker compose logs; exit 1; }
+              echo "Port ${port} not ready (attempt $i)..."
               sleep 5
             done
           done
-          echo "All services ready."
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install test dependencies
         run: pip install -r tests/integration/requirements.txt
@@ -70,6 +81,6 @@ jobs:
       - name: Run integration tests
         run: python -m pytest tests/integration/ -v --tb=short
 
-      - name: Dump service logs on failure
+      - name: Dump logs on failure
         if: failure()
         run: docker compose logs

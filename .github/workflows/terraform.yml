@@ -1,0 +1,63 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: [terraform/**]
+  pull_request:
+    paths: [terraform/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: ${{ github.event_name == 'pull_request' && 'Plan' || 'Apply' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_ssh_public_key: ${{ secrets.TF_SSH_PUBLIC_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: terraform init
+        run: terraform init
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: terraform plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Plan
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: terraform apply -auto-approve tfplan

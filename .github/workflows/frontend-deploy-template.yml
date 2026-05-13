@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DROP THIS FILE into your frontend repo at .github/workflows/deploy.yml
+# It builds the PWA and ships it to the EC2 instance.
+#
+# GitHub Secrets required in the FRONTEND repo:
+#   EC2_HOST    — the Elastic IP from `terraform output public_ip`
+#   EC2_SSH_KEY — the private key matching the public key in terraform.tfvars
+# ─────────────────────────────────────────────────────────────────────────────
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & deploy PWA
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build PWA
+        run: pnpm build
+        env:
+          # Point the frontend at the backend — same server, same IP/domain.
+          VITE_API_BASE_URL: http://${{ secrets.EC2_HOST }}
+
+      - name: Ship built files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "dist/"
+          target: "/opt/soko/app/frontend-dist/"
+          strip_components: 1
+          rm: true
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: docker exec api_gateway nginx -s reload
+
+      - name: Smoke check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: curl -sf http://localhost/ | grep -q "<!DOCTYPE html>" && echo "Frontend live." || echo "Warning: index.html not found."
